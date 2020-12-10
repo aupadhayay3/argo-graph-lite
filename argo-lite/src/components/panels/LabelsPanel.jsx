@@ -11,13 +11,7 @@ class LabelsPanel extends React.Component {
     return (
       <div>
         <Button
-          iconName="eye-off"
-          className={Classes.FILL}
-          onClick={() => appState.graph.frame.showAllLabels()}
-        >
-          Show All Labels
-        </Button>
-        <Button
+          id="hideAll"
           iconName="eye-off"
           className={Classes.FILL}
           onClick={() => appState.graph.frame.hideAllLabels()}
@@ -25,6 +19,17 @@ class LabelsPanel extends React.Component {
           Hide All Labels
         </Button>
         <Button
+          style={{display:"none"}}
+          id="showAll"
+          iconName="eye-on"
+          className={Classes.FILL}
+          onClick={() => appState.graph.frame.showAllLabels()}
+        >
+          Show All Labels
+        </Button>
+        <Button
+          style={{marginTop:"1em"}}
+          id="hideSelected"
           iconName="eye-off"
           className={Classes.FILL}
           onClick={() => appState.graph.frame.hideSelectedLabels()}
@@ -32,6 +37,8 @@ class LabelsPanel extends React.Component {
           Hide Labels of Selected Nodes
         </Button>
         <Button
+          style={{marginTop:"1em",display:"none"}}
+          id="showSelected"
           iconName="eye-on"
           className={Classes.FILL}
           onClick={() => appState.graph.frame.showSelectedLabels()}
@@ -61,7 +68,8 @@ class LabelsPanel extends React.Component {
           }}
           value={appState.graph.nodes.labelLength}
         />
-        <h6>Label By</h6>
+        <div style={{height: '30px'}} />
+        <h6>Label By</h6> 
         <Select
           items={appState.graph.allPropertiesKeyList}
           itemRenderer={CommonItemRenderer}

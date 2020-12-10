@@ -1,3 +1,1 @@
-# argo-share
-
-A boilerplate strapi app used to quickly setup a testing backend.
+`argo-share` has been migrated to [this repository](https://github.com/poloclub/argo-graph-share)

@@ -31,7 +31,14 @@ const loadSnapshotFromURL = (url) => {
   return fetch(url, {
     method: 'GET',
     mode: 'cors'
-  }).then(response => response.text());
+  }).then(response => response.text()).catch(error => {
+    toaster.show({
+      message: 'Failed to fetch graph snapshot',
+      intent: Intent.DANGER,
+      timeout: -1
+    });
+    console.error(error);
+  });
 };
 
 const loadSnapshotFromStrapi = (uuid) => {
@@ -40,7 +47,12 @@ const loadSnapshotFromStrapi = (uuid) => {
     method: 'GET',
     mode: 'cors'
   }).then(response => response.json()).then(json => json[0].body).catch(error => {
-    // TODO: Show user an error dialog saying graph cannot be fetched.
+    toaster.show({
+      message: 'Failed to fetch graph snapshot',
+      intent: Intent.DANGER,
+      timeout: -1
+    });
+    console.error(error);
   });
 };
 
@@ -61,6 +73,7 @@ const loadAndDisplaySnapshotFromStrapi = (uuid) => {
 };
 
 window.loadAndDisplaySnapshotFromURL = loadAndDisplaySnapshotFromURL;
+window.loadAndDisplaySnapshotFromStrapi = loadAndDisplaySnapshotFromStrapi;
 
 window.loadInitialSampleGraph = async () => {
   // default fallback url
@@ -111,7 +124,7 @@ autorun(() => {
 autorun(() => {
   if (appState.graph.frame) {
     appState.graph.frame.updateGraph(appState.graph.computedGraph);
-    appState.graph.frame.setAllNodesShape(appState.graph.nodes.shape);
+    appState.graph.frame.setAllNodesShapeWithOverride(appState.graph.nodes.shape, appState.graph.overrides);
     appState.graph.frame.setLabelRelativeSize(appState.graph.nodes.labelSize);
     appState.graph.frame.setLabelLength(appState.graph.nodes.labelLength);
   }
@@ -186,7 +199,7 @@ autorun(() => {
         appState.import.importConfig.edgeFile.topN = it;
         appState.import.importConfig.edgeFile.columns = Object.keys(it[0]).map(key => `${key}`);
         appState.import.importConfig.edgeFile.mapping.fromId = appState.import.importConfig.edgeFile.columns[0];
-        appState.import.importConfig.edgeFile.mapping.toId = appState.import.importConfig.edgeFile.columns[0]
+        appState.import.importConfig.edgeFile.mapping.toId = appState.import.importConfig.edgeFile.columns[1];
         appState.import.importConfig.edgeFile.ready = true;
       });
     } catch {
@@ -246,11 +259,10 @@ autorun(() => {
         delimiter
       });
 
-      runInAction("preview top N lines of edge file", () => {
+      runInAction("preview top N lines of node file", () => {
         appState.import.importConfig.nodeFile.topN = it;
         appState.import.importConfig.nodeFile.columns = Object.keys(it[0]).map(key => `${key}`);
-        appState.import.importConfig.nodeFile.mapping.fromId = appState.import.importConfig.nodeFile.columns[0];
-        appState.import.importConfig.nodeFile.mapping.toId = appState.import.importConfig.nodeFile.columns[0]
+        appState.import.importConfig.nodeFile.mapping.id = appState.import.importConfig.nodeFile.columns[0];
         appState.import.importConfig.nodeFile.ready = true;
       });
     } catch {

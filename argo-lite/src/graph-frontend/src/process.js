@@ -34,8 +34,8 @@ var Frame = function(graph, options) {
   this.mouseEnd = new THREE.Vector3(0, 0, 0);
   this.dragging = null;
   this.showBox = false;
-  this.renderWidth = 500;
-  this.renderHeight = 500;
+  this.renderWidth = 1000;
+  this.renderHeight = 1000;
   this.maxZoom = 1000;
   this.paused = false;
   this.mouseDown = false;
@@ -47,11 +47,9 @@ var Frame = function(graph, options) {
   this.mapRenderPerNumberOfFrame = def.MAP_RENDER_PER_NUMBER_OF_FRAME;
   this.darkMode = true;
   this.lastNode = null;
-  this.fakeNodes = [];
   this.rightClickedNode = null;
   this.doHighlightNeighbors = def.NODE_NEIGHBOR_HIGHLIGHT;
   this.prevHighlights = [];
-  this.neighborHost = null;
   this.hull = null;
 
   require("./utils/utils")(this);
@@ -117,6 +115,11 @@ var Frame = function(graph, options) {
       antialias: aa,
       preserveDrawingBuffer: true,
     });
+    self.minimapRenderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: aa,
+      preserveDrawingBuffer: true,
+    });
     //self.renderer.setPixelRatio(window.devicePixelRatio);
     //self.renderer.setPixelRatio(0.1);
     self.setDisplayParams();
@@ -127,10 +130,11 @@ var Frame = function(graph, options) {
     self.setupGeometry();
     self.setupSelect();
 
+    // Make sure to clear children before setting up new frame.
+    self.element.innerHTML = "";
     self.element.appendChild(self.renderer.domElement);
     self.element.appendChild(self.cssRenderer.domElement);
-
-    self.canvas = document.querySelector("graph-container");
+    self.element.appendChild(self.minimapRenderer.domElement);
 
     self.setupLayout();
 
@@ -161,6 +165,7 @@ var Frame = function(graph, options) {
 
     self.renderer.setSize(self.width, self.height);
     self.cssRenderer.setSize(self.width, self.height);
+    self.minimapRenderer.setSize(0.2 * self.height, 0.2 * self.height);
   };
 
   /**
@@ -206,8 +211,8 @@ var Frame = function(graph, options) {
         self.layoutInit = false;
       }
     }
-    self.renderer.setViewport(0, 0, 1 * self.width, 1 * self.height);
-    self.renderer.setScissor(self.minimap.width, 0, 1 * self.width, 1 * self.height);
+    self.renderer.setViewport(0, 0, self.width, self.height);
+    self.renderer.setScissor(0, 0, self.width, self.height);
     self.renderer.setScissorTest(true);
     self.renderer.render(self.scene, self.ccamera);
     self.cssRenderer.render(self.scene, self.ccamera);
@@ -219,10 +224,10 @@ var Frame = function(graph, options) {
       if (self.mapShowing) {
         self.minimap.width = 0.2 * self.height;
         self.minimap.height = 0.2 * self.height;
-        self.renderer.setViewport(0, 0, self.minimap.width, self.minimap.height);
-        self.renderer.setScissor(0, 0, self.minimap.width, self.minimap.height);
-        self.renderer.setScissorTest(true);
-        self.renderer.render(self.scene, self.minimap.camera);
+        self.minimapRenderer.setViewport(0, 0, self.minimap.width, self.minimap.height);
+        self.minimapRenderer.setScissor(0, 0, self.minimap.width, self.minimap.height);
+        self.minimapRenderer.setScissorTest(true);
+        self.minimapRenderer.render(self.scene, self.minimap.camera);
       }
     }
   };

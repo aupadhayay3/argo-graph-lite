@@ -371,15 +371,59 @@ export function requestImportGraphFromCSV(hasNodeFile, delimiter, newProjectName
 
   // TODO: Potentially separate this out to web worker.
   importGraphFromCSV(importConfig).then(graph => {
+    // Run post import filters
+    appState.import.postImportFilter(graph.rawGraph);
+
     runInAction('load imported graph', () => {
       appState.graph.rawGraph = graph.rawGraph;
       appState.graph.metadata = graph.metadata;
+      appState.graph.setUpFrame();
     });
     // Reinitialize global configs
     appState.graph.nodes = appState.graph.initialGlobalConfig.nodes;
     appState.graph.overrides = new Map();
     appState.import.loading = false;
     appState.import.dialogOpen = false;
+    // Sync preference store with graph-frontend frame
+    if (!appState.preferences.darkMode) { // assume frame defaults to dark
+      appState.graph.frame.toggleDark();
+    }
+    if (appState.preferences.minimapShowing) {
+      appState.graph.frame.showMiniMap();
+    } else {
+      appState.graph.frame.hideMiniMap();
+    }
+    // Newly imported graph shouldn't have label showing
+    appState.graph.frame.turnOffLabelCSSRenderer();
+  });
+}
+
+export function requestImportGraphFromGexf() {
+  importGraphFromGexf().then(graph => {
+    // Run post import filters
+    appState.import.postImportFilter(graph.rawGraph);
+
+    runInAction('load imported graph', () => {
+      appState.graph.rawGraph = graph.rawGraph;
+      appState.graph.metadata = graph.metadata;
+      appState.graph.setUpFrame();
+    });
+    // Reinitialize global configs
+    appState.graph.nodes = appState.graph.initialGlobalConfig.nodes;
+    appState.graph.overrides = new Map();
+    appState.import.loading = false;
+    appState.import.gexfDialogOpen = false;
+    // Sync preference store with graph-frontend frame
+    if (!appState.preferences.darkMode) { // assume frame defaults to dark
+      appState.graph.frame.toggleDark();
+    }
+    if (appState.preferences.minimapShowing) {
+      appState.graph.frame.showMiniMap();
+    } else {
+      appState.graph.frame.hideMiniMap();
+    }
+    // Newly imported graph shouldn't have label showing
+    appState.graph.frame.turnOffLabelCSSRenderer();
   });
 }
 
@@ -410,7 +454,82 @@ async function readCSV(fileObject, hasHeader, delimiter) {
       }));
     }
   });
+}
+
+async function parseGEXF(content) {
+  const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(content,"text/xml");
+      const xmlEdges = xmlDoc.getElementsByTagName('edge');
+      const xmlNodes = xmlDoc.getElementsByTagName('node');
+      const xmlAttri = xmlDoc.getElementsByTagName('attributes')
+      
+      let nodeAttri = [];
+      let edgeAttri = [];
+      const edgesArr = [];
+      const nodesArr = [];
+      const nodeAttriOrdered = {};
+      
+      for (let i = 0, l = xmlAttri.length; i < l; i++) {
+        const curr = xmlAttri[i];
+        if (curr.getAttribute('class') === 'node') {
+          nodeAttri = curr.getElementsByTagName('attribute');
+        }
+        else if (curr.getAttribute('class') === 'edge') {
+          edgeAttri = curr.getElementsByTagName('attribute');
+        }
+      }
+      
+      for (let i = 0, l = nodeAttri.length; i < l; i++) {
+        const curr = nodeAttri[i];
+        nodeAttriOrdered[curr.getAttribute("id")] = curr.getAttribute("title");
+      }
+
+      for (let i = 0, l = xmlEdges.length; i < l; i++) {
+        const currEdge = xmlEdges[i];
+        const s = currEdge.getAttribute('source').toString();
+        const t = currEdge.getAttribute('target').toString();
+        edgesArr.push({
+          source_id: s,
+          target_id: t,
+        });
+      }
+      for (let i = 0, l = xmlNodes.length; i < l; i++) {
+        const currNode = xmlNodes[i];
+        const id = currNode.getAttribute('id').toString();
+        const nodeAttvalues = currNode.getElementsByTagName("attvalues");
+        const nodeAttvalue = [];
+        if (nodeAttvalues.length != 0) {
+          nodeAttvalue = nodeAttvalues[0].getElementsByTagName("attvalue");
+        }
+        let node = { id: id, degree: 0, pagerank: 0, node_id: id};
+        for (let j = 0; j < nodeAttvalue.length; j++){
+          const value = nodeAttvalue[j].attributes["value"].value;
+          const attributeIdElementAttribute = nodeAttvalue[j].attributes["for"] || nodeAttvalue[j].attributes["id"];
+          const attributeId = attributeIdElementAttribute.value;
+          node[nodeAttriOrdered[attributeId]] = value;
+        }
+        for (let j = 0; j < currNode.attributes.length; j++) {
+          const currAttri = currNode.attributes[j];
+            node[currAttri.name] = currAttri.value;
+        }
+        node["id"] = id;
+        node["node_id"] = id;
+        nodesArr.push(node);
+      }
+      return [nodesArr, edgesArr];
+}
+
+async function readGEXF(fileObject) {
+  const file = fileObject;
+  const reader = new FileReader();
+  reader.readAsText(file);
   
+  return new Promise((resolve, reject) => {
+      reader.onload = () => {
+      const content = reader.result;
+      resolve(parseGEXF(content));
+    }
+  });
 }
 
 async function importGraphFromCSV(config) {
@@ -473,6 +592,63 @@ async function importGraphFromCSV(config) {
   edges.forEach(it => {
     const from = it[fromId].toString();
     const to = it[toId].toString();
+    // Argo currently works with undirected graph
+    addEdge(from, to);
+    addEdge(to, from);
+  });
+
+  const rank = pageRank(graph);
+  nodesArr = nodesArr.map(n => ({ ...n, node_id: n.id, pagerank: rank[n.id], degree: degreeDict[n.id] }));
+  return {
+    rawGraph: { nodes: nodesArr, edges: edgesArr },
+    metadata: {
+      snapshotName: 'Untitled Graph',
+      fullNodes: nodesArr.length,
+      fullEdges: Math.floor(edgesArr.length / 2), // Counting undirected edges
+      nodeProperties: Object.keys(nodesArr[0]),
+      nodeComputed: ['pagerank', 'degree'],
+      edgeProperties: ['source_id', 'target_id'],
+    },
+  }
+}
+
+export async function importGraphFromGexf() {
+  const gexfParsed = await readGEXF(appState.import.selectedGexfFileFromInput);
+  let nodesArr = gexfParsed[0];
+  const edges = gexfParsed[1];
+  const graph = createGraph();
+  const degreeDict = {};
+
+  nodesArr.forEach((it) => {
+    const currNode = it["id"].toString();
+    if (!graph.hasNode(currNode)) {
+      graph.addNode(currNode, it);
+      degreeDict[currNode] = 0;
+    }
+  });
+
+  const edgesSet = new Set();
+  
+  const edgesArr = [];
+
+  const addEdge = (from, to) => {
+    const edgeKey = `${from}👉${to}`;
+    if (edgesSet.has(edgeKey)) {
+      return;
+    }
+    edgesSet.add(edgeKey);
+    graph.addLink(from, to);
+    degreeDict[to] += 1;
+    edgesArr.push({
+      source_id: from,
+      target_id: to,
+    });
+  };
+  
+  edges.forEach(it => {
+    const from = it["source_id"].toString();
+    const to = it["target_id"].toString();
+
     // Argo currently works with undirected graph
     addEdge(from, to);
     addEdge(to, from);

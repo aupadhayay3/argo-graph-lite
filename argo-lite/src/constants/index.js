@@ -1,9 +1,29 @@
 import * as scale from "d3-scale";
 
+// Argo-lite Iframe widget mode
+// Build the app separately and host it on a different URL
+// If set to true, the app will begin in widget mode
+// hiding certain panels, logo, and minimap
+// and show a minimalist Navbar.
+export const IS_IFRAME_WIDGET = window.location !== window.parent.location;
+
+export const FRONTEND_URL = "https://poloclub.github.io/argo-graph-lite";
+export const LOGO_URL = "https://github.com/poloclub/argo-graph-lite";
+export const GITHUB_URL = "https://github.com/poloclub/argo-graph-lite";
 // Argo-lite Graph Sharing backend Strapi Server:
 export const BACKEND_URL = "https://argo-share.herokuapp.com"; // for production
 // export const BACKEND_URL = "https://sleepy-brushlands-57948.herokuapp.com"; // for free heroku
 // export const BACKEND_URL = "http://localhost:1337"; // for local strapi development
+export const SAMPLE_GRAPH_SNAPSHOTS = [
+  ["Les Miserables", "3b5f746f-19a5-44d1-99ea-407ff9e47a0e"],
+  ["CORD-19 Citation Graph 06-02", "4bf882d3-8966-4f41-a590-acafeb998d2a"]
+];
+
+// When resizing window or running on mobile,
+// used to determine whether screen
+// is considered small.
+export const MOBILE_WIDTH_CUTOFF = 800;
+export const MOBILE_HEIGHT_CUTOFF = 480;
 
 export const SCALE_LINEAR = "Linear Scale";
 export const SCALE_LOG = "Log Scale";

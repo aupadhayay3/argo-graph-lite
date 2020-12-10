@@ -68,8 +68,28 @@ module.exports = function(self) {
     });
   };
 
-  self.toggleMap = () => {
-    self.mapShowing = !self.mapShowing;
+  self.toggleMiniMap = () => {
+    if (self.mapShowing) {
+      self.hideMiniMap();
+    } else {
+      self.showMiniMap();
+    }
+  };
+
+  self.showMiniMap = () => {
+    if (self.mapShowing) {
+      return;
+    }
+    self.mapShowing = true;
+    self.element.appendChild(self.minimapRenderer.domElement);
+  };
+
+  self.hideMiniMap = () => {
+    if (!self.mapShowing) {
+      return;
+    }
+    self.mapShowing = false;
+    self.element.removeChild(self.minimapRenderer.domElement);
   };
 
   // The CSS Renderer for rendering labels is the most expensive
@@ -110,8 +130,8 @@ module.exports = function(self) {
     // This is because CSSRenderer is slow.
     if (nodes.length == 0) {
       self.turnOffLabelCSSRenderer();
-    } else {
-      // TODO: Only turn on when no node is moving?
+    } else if (!((self.selection.length > 0) && (self.dragging)) || (appState.graph.frame.paused)) { 
+      //Only turns on when no node is moving
       self.turnOnLabelCSSRenderer();
     }
 
@@ -123,10 +143,14 @@ module.exports = function(self) {
   };
 
   self.showSelectedLabels = () => {
+    document.getElementById("showSelected").style.display="none";
+    document.getElementById("hideSelected").style.display="inline";
     self.showLabels(self.selection.map(n => n.id));
   };
 
   self.hideSelectedLabels = () => {
+    document.getElementById("hideSelected").style.display="none";
+    document.getElementById("showSelected").style.display="inline";
     self.hideLabels(self.selection.map(n => n.id));
   };
 
@@ -167,6 +191,8 @@ module.exports = function(self) {
   };
 
   self.hideAllLabels = () => {
+    document.getElementById("hideAll").style.display="none";
+    document.getElementById("showAll").style.display="inline";
     self.graph.forEachNode(function(node) {
       var node = self.graph.getNode(node.id);
       node.renderData.textHolder.children[0].element.override = false;
@@ -175,6 +201,8 @@ module.exports = function(self) {
   };
 
   self.showAllLabels = () => {
+    document.getElementById("showAll").style.display="none";
+    document.getElementById("hideAll").style.display="inline";
     self.graph.forEachNode(function(node) {
       var node = self.graph.getNode(node.id);
       node.renderData.textHolder.children[0].element.override = true;
@@ -197,6 +225,16 @@ module.exports = function(self) {
       });
     }
   };
+
+  self.setAllNodesShapeWithOverride = function(shape, overrides) {
+    self.graph.forEachNode(function(node) {
+      if (overrides.has(node.id) && overrides.get(node.id).has('shape')) {
+        self.setNodeShape(self.graph.getNode(node.id), overrides.get(node.id).get('shape'));
+      } else {
+        self.setNodeShape(self.graph.getNode(node.id), shape);
+      }
+    });
+  }
 
   self.setNodeShape = function(node, shape) {
     if (shape == "square") {
@@ -308,14 +346,6 @@ module.exports = function(self) {
     self.onWindowResize();
   };
 
-  self.getNeighbors = function(node) {
-    if (node) {
-      self.addNeighbors(node);
-    } else {
-      self.addNeighbors(self.rightClickedNode);
-    }
-  };
-
   self.toggleNeighborHighlight = function() {
     self.doHighlightNeighbors = !self.doHighlightNeighbors;
   };
@@ -345,6 +375,16 @@ module.exports = function(self) {
   self.removeSelected = function() {
     for (var i = 0; i < self.selection.length; i++) {
       self.removeNode(self.selection[i]);
+    }
+    self.selection = [];
+  };
+
+  self.removeNodesByIds = function(nodeids) {
+    for (var i = 0; i < nodeids.length; i++) {
+      const node = self.graph.getNode(nodeids[i]);
+      if (node) {
+        self.removeNode(node);
+      }
     }
     self.selection = [];
   };

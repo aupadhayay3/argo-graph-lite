@@ -25,6 +25,7 @@ html {
   width: 100%;
   height: 100%;
   position: relative;
+  overflow: hidden;
 }
 
 .app-wrapper {
@@ -67,6 +68,29 @@ html {
 .left-overlay-card {
   margin-top: -1em;
   padding-top: 1.1em;
+  overflow-y: auto;
+  max-height: 530px;
+}
+
+/* width */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #212c34; 
+}
+ 
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #435a6a; 
+  border-radius: 10px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #495964; 
 }
 
 
@@ -121,6 +145,18 @@ html {
   right: 2em;
   top: 5em;
   position: absolute;
+}
+
+.minimal-navbar-right {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+}
+
+.minimal-navbar-left {
+  position: absolute;
+  top: 0px;
+  left: 0px;
 }
 
 .bottom-status-bar {
@@ -226,13 +262,46 @@ div.pt-card.sub-option.legend {
 
 .node-details-table {
   overflow-x: auto;
+  overflow-y: auto;
+  max-width: 400px;
+  max-height: 60vh;
   font-size: 0.4em;
-  min-width: 400px;
   pointer-events: all;
+  padding: 0;
 }
 
 .argo-menu-list-header {
   font-size: 1.5em;
   color: lightslategray;
   margin-bottom: 10px;
+}
+
+.argo-table-container {
+  overflow: auto;
+  max-width: 80vw;
+  max-height: 80vh;
+}
+
+.argo-table-container__table {
+  border-collapse: collapse;
+}
+
+.argo-table-container__table th {
+  white-space: normal;
+}
+
+.argo-table-container__table td {
+  white-space: normal;
+}
+
+.argo-selection-action-panel {
+  right: 300px;
+  top: 50px;
+  position: absolute;
+  pointer-events: all;
+}
+
+/* Override blueprint numeric input, since it's useless unless inline */
+.pt-numeric-input.pt-control-group {
+  display: inline-flex;
 }

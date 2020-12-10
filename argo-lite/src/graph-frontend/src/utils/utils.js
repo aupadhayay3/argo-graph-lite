@@ -1,4 +1,5 @@
 var def = require("../imports").default;
+var appState = require("../../../stores").default;
 var THREE = def.THREE;
 var Edge = def.Edge;
 var Node = def.Node;
@@ -12,7 +13,7 @@ module.exports = function(self) {
    * @param {*} event
    * @param {*} currentElement
    */
-  self.relMouseCoords = function(event, currentElement) {
+  self.relMouseCoords = function(pageX, pageY, currentElement) {
     var totalOffsetX = 0;
     var totalOffsetY = 0;
     var canvasX = 0;
@@ -23,8 +24,8 @@ module.exports = function(self) {
       totalOffsetY += currentElement.offsetTop - currentElement.scrollTop;
     } while ((currentElement = currentElement.offsetParent));
 
-    canvasX = event.pageX - totalOffsetX;
-    canvasY = event.pageY - totalOffsetY;
+    canvasX = pageX - totalOffsetX;
+    canvasY = pageY - totalOffsetY;
 
     return { x: canvasX, y: canvasY };
   };
@@ -38,12 +39,19 @@ module.exports = function(self) {
     if (!node.data) {
       node.data = {};
     }
+
+    let hexToRGB = (hex) => {
+      var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? 
+      new THREE.Color(appState.graph.edges.color)
+      : null;
+  }
     nodeToAdd.renderData = {
       label: node.data.label || "No Label",
       color: node.data.color || def.NODE_COLOR,
       hcolor: node.data.hcolor || def.NODE_HIGHLIGHT,
       shape: node.data.shape || def.NODE_SHAPE,
-      linecolor: new THREE.Color(0.5, 0.5, 0.5),
+      linecolor:  hexToRGB(appState.graph.edges.color),
       numYeast: Math.ceil(Math.random() * 8),
       size: node.data.size,
       tsize: node.data.tsize || def.TEXT_SIZE,

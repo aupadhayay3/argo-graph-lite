@@ -33,26 +33,23 @@ class PreferencesDialog extends React.Component {
             }}
           />
           
-          <p>Choose a different workspace directory (need to relaunch Argo)</p>
-          <div className={classnames(Classes.CONTROL_GROUP)}>
-            <div className={classnames(Classes.INPUT_GROUP, Classes.FILL)}>
-              <input
-                type="text"
-                className={classnames(Classes.DISABLED, Classes.INPUT)}
-                placeholder="Select workspace directory"
-                readOnly
-                value={appState.preferences.workspacePath}
-              />
-            </div>
-            <Button
-              intent={Intent.PRIMARY}
-              onClick={() => {
-                requestChangeWorkspace();
-              }}
-            >
-              Choose Directory
-            </Button>
-          </div>
+          <Switch
+           label="Minimap"
+           checked={appState.preferences.minimapShowing}
+           onChange={() => {
+            appState.preferences.minimapShowing = !appState.preferences.minimapShowing;
+            appState.preferences.saveUserConfig();
+            if (appState.graph.frame) {
+              if (appState.preferences.minimapShowing) {
+                appState.graph.frame.showMiniMap();
+              } else {
+                appState.graph.frame.hideMiniMap();
+              }
+            } else {
+              console.log("Frame not ready when trying to toggle minimap.");
+            }
+           }}
+          />
         </div>
         <div className="pt-dialog-footer">
           <div className="pt-dialog-footer-actions">

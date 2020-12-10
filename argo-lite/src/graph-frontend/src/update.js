@@ -124,13 +124,6 @@ module.exports = function(self) {
         }
       }
 
-      for (var i = 0; i < self.fakeNodes.length; i++) {
-        self.fakeNodes[i].fx =
-          self.neighborHost.x + self.neighborHost.data.size * 3;
-        self.fakeNodes[i].fy =
-          self.neighborHost.y - self.neighborHost.data.size * 3 * i;
-      }
-
       if (!self.paused) {
         self.force.tick();
       }
@@ -213,8 +206,18 @@ module.exports = function(self) {
     } else {
       self.tickToStatic = false;
     }
+
     if (self.newNodeIds) {
+      // Highlight every new node.
       self.highlightNodeIds(self.newNodeIds, true);
+
+      // Select every new node if there aren't too many of them.
+      if (self.newNodeIds.length < 10) {
+        for (let i = 0; i < self.newNodeIds.length; i++) {
+          self.selection.push(self.graph.getNode(self.newNodeIds[i]));
+        }
+        self.ee.emit("select-nodes", self.selection);
+      }
     }
   };
 
@@ -225,15 +228,13 @@ module.exports = function(self) {
     self.graph.forEachNode(function(node) {
       var pos = positions[node.id];
       if (pos) {
-        self.graph.getNode(node.id).x = pos[0];
-        self.graph.getNode(node.id).y = pos[1];
-        self.graph.getNode(node.id).pinnedx = node.pinnedx;
-        self.graph.getNode(node.id).pinnedy = node.pinnedy;
+        node.x = pos[0];
+        node.y = pos[1];
         if (node.pinnedx) {
-          self.graph.getNode(node.id).fx = pos[0];
+          node.fx = pos[0];
         }
         if (node.pinnedy) {
-          self.graph.getNode(node.id).fy = pos[1];
+          node.fy = pos[1];
         }
       }
     });

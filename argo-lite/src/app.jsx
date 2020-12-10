@@ -15,6 +15,7 @@ import ThreeJSVis from "./visualizers/ThreeJSVis";
 import FloatingCards from "./components/FloatingCards";
 import registerIPC from "./ipc/client";
 import { fetchWorkspaceProjects } from "./ipc/client";
+import { MOBILE_WIDTH_CUTOFF, MOBILE_HEIGHT_CUTOFF } from "./constants";
 
 import keydown, { Keys } from "react-keydown";
 
@@ -27,6 +28,21 @@ appState.preferences.loadUserConfig();
 
 const { DELETE, BACKSPACE, P, U } = Keys;
 
+// Respond to window resize, also triggered after frame is loaded.
+function respondToResize() {
+  if (!appState.graph.frame) {
+    window.setTimeout(respondToResize, 1000);
+    return;
+  }
+  if (window.innerWidth < MOBILE_WIDTH_CUTOFF || window.innerHeight < MOBILE_HEIGHT_CUTOFF) {
+    appState.preferences.turnOnMinimalMode();
+  }
+}
+
+respondToResize();
+
+window.addEventListener('resize', respondToResize);
+
 @keydown
 @observer
 class App extends React.Component {
@@ -34,7 +50,7 @@ class App extends React.Component {
     if (keydown.event) {
       if (keydown.event.which === DELETE || keydown.event.which === BACKSPACE) {
         if (appState && appState.graph && appState.graph.frame) {
-          appState.graph.removeNodes(appState.graph.frame.getSelectedIds());
+          appState.graph.hideNodes(appState.graph.frame.getSelectedIds());
           this.forceUpdate();
         }
       } else if (keydown.event.which === P) {
